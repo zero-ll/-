@@ -219,6 +219,13 @@ const SearchTaskList: React.FC = () => {
         {selectedTask && (
           <Descriptions column={1} bordered size="middle">
             <Descriptions.Item label="任务名称">{selectedTask.name}</Descriptions.Item>
+            <Descriptions.Item label="搜索方式">
+              {selectedTask.type === 'keyword' ? (
+                <Tag icon={<SearchOutlined />} color="blue">关键词</Tag>
+              ) : (
+                <Tag icon={<CloudUploadOutlined />} color="purple">上传</Tag>
+              )}
+            </Descriptions.Item>
             <Descriptions.Item label="创建人">{selectedTask.creator || '-'}</Descriptions.Item>
             <Descriptions.Item label="创建时间">{selectedTask.createdAt}</Descriptions.Item>
             <Descriptions.Item label="任务状态">
@@ -235,7 +242,7 @@ const SearchTaskList: React.FC = () => {
                 }
               />
             </Descriptions.Item>
-            {selectedTask.config && (
+            {selectedTask.type === 'keyword' && selectedTask.config && (
               <>
                 <Descriptions.Item label="行业关键词">
                   {selectedTask.config.industryKeywords || '-'}
@@ -271,6 +278,11 @@ const SearchTaskList: React.FC = () => {
                   {selectedTask.config.minSubscribers ? selectedTask.config.minSubscribers.toLocaleString() : '-'}
                 </Descriptions.Item>
               </>
+            )}
+            {selectedTask.type === 'upload' && (
+              <Descriptions.Item label="说明">
+                <Text type="secondary">该任务通过Excel上传方式创建，无需配置搜索参数</Text>
+              </Descriptions.Item>
             )}
           </Descriptions>
         )}

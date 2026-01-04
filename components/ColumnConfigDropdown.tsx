@@ -15,6 +15,7 @@ export const ALL_COLUMNS: ColumnField[] = [
   { key: 'subscriber_tier', label: '粉丝量级', mandatory: true },
   { key: 'country', label: '国家', mandatory: true },
   { key: 'channel_type', label: '红人类型', mandatory: false },
+  { key: 'is_candidate', label: '候选状态', mandatory: false },
   { key: 'quality_score', label: '红人质量评估', mandatory: true },
   { key: 'match_score', label: '红人业务匹配度', mandatory: true },
   { key: 'avg_views_last_10', label: '近10条均播', mandatory: true },
@@ -34,12 +35,13 @@ export const ALL_COLUMNS: ColumnField[] = [
   { key: 'sponsored_video_links', label: '商单视频链接', mandatory: false },
 ];
 
-// 默认展示的字段（11个）
+// 默认展示的字段（12个）
 export const DEFAULT_COLUMNS = [
   'influencer',
   'subscriber_tier',
   'country',
   'channel_type',
+  'is_candidate',
   'quality_score',
   'match_score',
   'avg_views_last_10',

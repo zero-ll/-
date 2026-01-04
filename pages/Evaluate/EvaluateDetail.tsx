@@ -92,6 +92,12 @@ const EvaluateDetail: React.FC = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   const addCandidates = usePitchStore((state) => state.addCandidates);
+  const candidates = usePitchStore((state) => state.candidates);
+
+  // Helper function to check if influencer is already a candidate
+  const isCandidate = (influencerId: string): boolean => {
+    return candidates.some(c => c.influencer_id === influencerId);
+  };
 
   // Number Filter States
   const [qualityFilter, setQualityFilter] = useState<NumberFilterValue>({ condition: 'none' });
@@ -328,6 +334,19 @@ const EvaluateDetail: React.FC = () => {
       key: 'channel_type',
       width: 200,
       render: (text: string) => text ? <Tag color="geekblue">{text}</Tag> : <span className="text-gray-400">-</span>,
+    },
+    is_candidate: {
+      title: '候选状态',
+      dataIndex: 'influencer_id',
+      key: 'is_candidate',
+      width: 110,
+      render: (influencerId: string) => {
+        return isCandidate(influencerId) ? (
+          <Tag color="success" icon={<CheckCircleOutlined />}>已添加</Tag>
+        ) : (
+          <Tag color="default">未添加</Tag>
+        );
+      },
     },
     quality_score: {
       title: '质量评估',

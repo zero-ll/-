@@ -3,6 +3,8 @@ import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useProjectStore } from '../../stores/useProjectStore';
+import { api } from '../../services/api';
 
 const { Title, Text } = Typography;
 
@@ -10,13 +12,21 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
+  const setCurrentProject = useProjectStore((state) => state.setCurrentProject);
 
   const onFinish = async (values: any) => {
     setLoading(true);
     try {
       await login(values.username, values.password);
+
+      // Fetch projects and set the first one as current
+      const projects = await api.getProjects();
+      if (projects && projects.length > 0) {
+        setCurrentProject(projects[0]);
+      }
+
       message.success('登录成功');
-      navigate('/projects');
+      navigate('/search/tasks');
     } catch (error) {
       message.error('用户名或密码错误');
     } finally {
