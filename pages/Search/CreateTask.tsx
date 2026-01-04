@@ -85,17 +85,11 @@ const CreateTask: React.FC = () => {
   };
 
   const onFinishUpload = async (values: any) => {
-    // 验证：上传文件和粘贴ID只能有一个
+    // 验证：必须上传文件
     const hasFile = values.file && values.file.length > 0;
-    const hasIds = values.influencerIds && values.influencerIds.trim().length > 0;
 
-    if (!hasFile && !hasIds) {
-      message.error('请上传文件或批量粘贴红人 ID');
-      return;
-    }
-
-    if (hasFile && hasIds) {
-      message.error('只能选择一种批量添加方式：上传文件或粘贴 ID');
+    if (!hasFile) {
+      message.error('请上传 Excel 文件');
       return;
     }
 
@@ -109,7 +103,6 @@ const CreateTask: React.FC = () => {
           industryKeywords: values.industryKeywords,
           brandKeywords: values.brandKeywords,
           competitorKeywords: values.competitorKeywords,
-          influencerIds: hasIds ? values.influencerIds : undefined,
         }
       });
       message.success('任务创建成功，开始处理');
@@ -132,7 +125,7 @@ const CreateTask: React.FC = () => {
     <Form layout="vertical" onFinish={onFinishKeyword} initialValues={{ videosPerKeyword: 50, searchDimension: 'video', sortBy: 'relevance' }}>
       <Row gutter={24}>
         <Col span={24}>
-           <Form.Item
+          <Form.Item
             name="taskName"
             label="任务名称"
             rules={[{ required: true, message: '请输入任务名称' }]}
@@ -178,7 +171,7 @@ const CreateTask: React.FC = () => {
             label="单个关键字搜索视频数"
             rules={[{ required: true, message: '请输入搜索视频数' }]}
           >
-             <InputNumber min={10} max={200} style={{ width: '100%' }} placeholder="10-200" />
+            <InputNumber min={10} max={200} style={{ width: '100%' }} placeholder="10-200" />
           </Form.Item>
 
           <Form.Item name="sortBy" label="排序方式">
@@ -241,9 +234,6 @@ const CreateTask: React.FC = () => {
           >
             <Input.TextArea placeholder="输入关键词，用分号分隔" rows={4} />
           </Form.Item>
-          <div className="text-xs text-gray-400 -mt-3 mb-4">
-            以上关键词配置将用作红人评估时的"商单"识别依据
-          </div>
         </Col>
 
         <Col xs={24} lg={8}>
@@ -269,13 +259,12 @@ const CreateTask: React.FC = () => {
         </Col>
       </Row>
 
-      <div className="mt-6 mb-4">
-        <Text strong>选择批量添加方式</Text>
-        <Text type="secondary" className="ml-2">（只能选择一种）</Text>
+      <div className="text-xs text-gray-400 mb-6">
+        以上关键词配置将用作红人评估时的"商单"识别依据
       </div>
 
       <Row gutter={24}>
-        <Col xs={24} lg={12}>
+        <Col xs={24}>
           <Form.Item label="上传红人名单">
             <Form.Item
               name="file"
@@ -298,35 +287,18 @@ const CreateTask: React.FC = () => {
                   仅支持 Excel 文件 (.xlsx, .xls)
                 </p>
                 <div className="mt-4">
-                   <Button
-                     icon={<FileExcelOutlined />}
-                     type="dashed"
-                     size="small"
-                     onClick={handleDownloadTemplate}
-                   >
-                     下载模板
-                   </Button>
+                  <Button
+                    icon={<FileExcelOutlined />}
+                    type="dashed"
+                    size="small"
+                    onClick={handleDownloadTemplate}
+                  >
+                    下载模板
+                  </Button>
                 </div>
               </Dragger>
             </Form.Item>
           </Form.Item>
-        </Col>
-
-        <Col xs={24} lg={12}>
-          <Form.Item
-            name="influencerIds"
-            label="批量粘贴红人 ID"
-            tooltip="每行一个红人 ID，或用逗号、分号分隔"
-          >
-            <Input.TextArea
-              placeholder="粘贴红人 ID，例如：&#10;UCxxxxxxxxxxxxxx&#10;UCyyyyyyyyyyyyyy&#10;或使用逗号、分号分隔"
-              rows={8}
-              style={{ fontFamily: 'monospace' }}
-            />
-          </Form.Item>
-          <div className="text-xs text-gray-500 -mt-2">
-            支持格式：每行一个ID，或用逗号、分号分隔
-          </div>
         </Col>
       </Row>
 
@@ -361,22 +333,22 @@ const CreateTask: React.FC = () => {
 
   return (
     <div className="space-y-6">
-       <div className="flex items-center gap-4 mb-2">
-         <Button
-            type="text"
-            icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/search/tasks')}
-            className="text-gray-500 hover:text-gray-700"
-         />
-         <div>
-            <Title level={3} style={{ marginBottom: 0 }}>创建搜索任务</Title>
-            <Text type="secondary">搜索新红人或分析现有红人</Text>
-         </div>
-       </div>
+      <div className="flex items-center gap-4 mb-2">
+        <Button
+          type="text"
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate('/search/tasks')}
+          className="text-gray-500 hover:text-gray-700"
+        />
+        <div>
+          <Title level={3} style={{ marginBottom: 0 }}>创建搜索任务</Title>
+          <Text type="secondary">搜索新红人或分析现有红人</Text>
+        </div>
+      </div>
 
-       <Card bordered={false} className="shadow-sm">
-         <Tabs defaultActiveKey="1" items={items} />
-       </Card>
+      <Card bordered={false} className="shadow-sm">
+        <Tabs defaultActiveKey="1" items={items} />
+      </Card>
     </div>
   );
 };

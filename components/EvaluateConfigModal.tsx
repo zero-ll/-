@@ -12,7 +12,8 @@ interface ChannelTypeConfig {
 interface EvaluateConfigModalProps {
   visible: boolean;
   onCancel: () => void;
-  onConfirm: (config: ChannelTypeConfig) => void;
+  onConfirm: (data: { taskName: string; channelTypes: ChannelTypeConfig }) => void;
+  defaultTaskName?: string;
 }
 
 const STORAGE_KEY = 'evaluate_channel_type_config';
@@ -21,6 +22,7 @@ const EvaluateConfigModal: React.FC<EvaluateConfigModalProps> = ({
   visible,
   onCancel,
   onConfirm,
+  defaultTaskName = '',
 }) => {
   const [form] = Form.useForm();
   const [p0Tags, setP0Tags] = useState<string[]>([]);
@@ -33,6 +35,9 @@ const EvaluateConfigModal: React.FC<EvaluateConfigModalProps> = ({
   // 从localStorage加载上次配置
   useEffect(() => {
     if (visible) {
+      // 设置任务名称默认值
+      form.setFieldsValue({ taskName: defaultTaskName });
+
       const savedConfig = localStorage.getItem(STORAGE_KEY);
       if (savedConfig) {
         try {
@@ -45,7 +50,7 @@ const EvaluateConfigModal: React.FC<EvaluateConfigModalProps> = ({
         }
       }
     }
-  }, [visible]);
+  }, [visible, defaultTaskName, form]);
 
   // 处理标签输入
   const handleInputConfirm = (
@@ -70,8 +75,8 @@ const EvaluateConfigModal: React.FC<EvaluateConfigModalProps> = ({
   };
 
   // 确认提交
-  const handleOk = () => {
-    // 验证P0必填
+  const handleOk = async () => {
+    // 先验证P0必填
     if (p0Tags.length === 0) {
       form.setFields([
         {
@@ -82,17 +87,28 @@ const EvaluateConfigModal: React.FC<EvaluateConfigModalProps> = ({
       return;
     }
 
-    const config: ChannelTypeConfig = {
-      p0: p0Tags,
-      p1: p1Tags,
-      p2: p2Tags,
-    };
+    try {
+      // 验证表单（任务名称）
+      const values = await form.validateFields();
 
-    // 保存到localStorage
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      const channelTypes: ChannelTypeConfig = {
+        p0: p0Tags,
+        p1: p1Tags,
+        p2: p2Tags,
+      };
 
-    onConfirm(config);
-    handleCancel();
+      // 保存频道类型配置到localStorage
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(channelTypes));
+
+      onConfirm({
+        taskName: values.taskName,
+        channelTypes,
+      });
+      handleCancel();
+    } catch (error) {
+      // 表单验证失败（任务名称为空）
+      console.error('Validation failed:', error);
+    }
   };
 
   // 取消或关闭
@@ -163,6 +179,14 @@ const EvaluateConfigModal: React.FC<EvaluateConfigModalProps> = ({
       </div>
 
       <Form form={form} layout="vertical">
+        <Form.Item
+          label={<span className="font-semibold">任务名称 <Text type="danger">*</Text></span>}
+          name="taskName"
+          rules={[{ required: true, message: '请输入任务名称' }]}
+        >
+          <Input placeholder="请输入任务名称" size="large" />
+        </Form.Item>
+
         <Form.Item
           label={<span className="font-semibold">P0 频道类型 <Text type="danger">*</Text></span>}
           name="p0"

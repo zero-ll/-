@@ -10,7 +10,9 @@ import {
   Tooltip,
   Input,
   Drawer,
-  Descriptions
+  Descriptions,
+  Modal,
+  message
 } from 'antd';
 import {
   PlusOutlined,
@@ -18,7 +20,8 @@ import {
   CloudUploadOutlined,
   SearchOutlined,
   ReloadOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
@@ -34,6 +37,9 @@ const SearchTaskList: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+  const [renamingTask, setRenamingTask] = useState<any>(null);
+  const [newTaskName, setNewTaskName] = useState('');
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -65,6 +71,38 @@ const SearchTaskList: React.FC = () => {
   const handleViewDetail = (task: any) => {
     setSelectedTask(task);
     setDrawerVisible(true);
+  };
+
+  const handleRename = (task: any) => {
+    setRenamingTask(task);
+    setNewTaskName(task.name);
+    setRenameModalVisible(true);
+  };
+
+  const handleRenameConfirm = async () => {
+    if (!newTaskName.trim()) {
+      message.error('任务名称不能为空');
+      return;
+    }
+
+    // 验证名称是否重复（排除当前任务）
+    const isDuplicate = tasks.some(
+      t => t.id !== renamingTask.id && t.name === newTaskName.trim()
+    );
+
+    if (isDuplicate) {
+      message.error('任务名称已存在，请使用其他名称');
+      return;
+    }
+
+    try {
+      await api.updateSearchTask(renamingTask.id, { name: newTaskName.trim() });
+      message.success('任务重命名成功');
+      setRenameModalVisible(false);
+      fetchTasks();
+    } catch (error) {
+      message.error('重命名失败');
+    }
   };
 
   const columns = [
@@ -99,10 +137,10 @@ const SearchTaskList: React.FC = () => {
         };
 
         const labelMap: Record<string, string> = {
-            completed: '已完成',
-            processing: '搜索中',
-            pending: '待处理',
-            failed: '失败',
+          completed: '已完成',
+          processing: '搜索中',
+          pending: '待处理',
+          failed: '失败',
         };
 
         return <Badge status={statusMap[status] || 'default'} text={labelMap[status] || status} />;
@@ -142,6 +180,14 @@ const SearchTaskList: React.FC = () => {
           >
             任务详情
           </Button>
+          <Button
+            type="link"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => handleRename(record)}
+          >
+            重命名
+          </Button>
         </Space>
       ),
     },
@@ -155,10 +201,10 @@ const SearchTaskList: React.FC = () => {
           <Text type="secondary">管理您的红人搜索任务</Text>
         </div>
         <Space>
-           <Tooltip title="刷新列表">
-              <Button icon={<ReloadOutlined />} onClick={fetchTasks} />
-           </Tooltip>
-           <Button
+          <Tooltip title="刷新列表">
+            <Button icon={<ReloadOutlined />} onClick={fetchTasks} />
+          </Tooltip>
+          <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => navigate('/search/create')}
@@ -194,13 +240,13 @@ const SearchTaskList: React.FC = () => {
             header: {
               cell: (props: any) => (
                 <th
-                    {...props}
-                    style={{
-                        ...props.style,
-                        background: '#fafafa',
-                        fontWeight: 600,
-                        color: '#666'
-                    }}
+                  {...props}
+                  style={{
+                    ...props.style,
+                    background: '#fafafa',
+                    fontWeight: 600,
+                    color: '#666'
+                  }}
                 />
               )
             }
@@ -232,13 +278,13 @@ const SearchTaskList: React.FC = () => {
               <Badge
                 status={
                   selectedTask.status === 'completed' ? 'success' :
-                  selectedTask.status === 'processing' ? 'processing' :
-                  selectedTask.status === 'failed' ? 'error' : 'default'
+                    selectedTask.status === 'processing' ? 'processing' :
+                      selectedTask.status === 'failed' ? 'error' : 'default'
                 }
                 text={
                   selectedTask.status === 'completed' ? '已完成' :
-                  selectedTask.status === 'processing' ? '搜索中' :
-                  selectedTask.status === 'failed' ? '失败' : '待处理'
+                    selectedTask.status === 'processing' ? '搜索中' :
+                      selectedTask.status === 'failed' ? '失败' : '待处理'
                 }
               />
             </Descriptions.Item>
@@ -258,12 +304,12 @@ const SearchTaskList: React.FC = () => {
                 </Descriptions.Item>
                 <Descriptions.Item label="排序方式">
                   {selectedTask.config.sortBy === 'relevance' ? '相关性' :
-                   selectedTask.config.sortBy === 'viewCount' ? '观看次数' :
-                   selectedTask.config.sortBy === 'date' ? '发布时间' : '-'}
+                    selectedTask.config.sortBy === 'viewCount' ? '观看次数' :
+                      selectedTask.config.sortBy === 'date' ? '发布时间' : '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="检索维度">
                   {selectedTask.config.searchDimension === 'video' ? '按视频' :
-                   selectedTask.config.searchDimension === 'channel' ? '按网红' : '-'}
+                    selectedTask.config.searchDimension === 'channel' ? '按网红' : '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="国家偏好">
                   {selectedTask.config.countries && selectedTask.config.countries.length > 0 ? (
@@ -279,14 +325,49 @@ const SearchTaskList: React.FC = () => {
                 </Descriptions.Item>
               </>
             )}
-            {selectedTask.type === 'upload' && (
+            {selectedTask.type === 'upload' && selectedTask.config && (
+              <>
+                <Descriptions.Item label="行业关键词">
+                  {selectedTask.config.industryKeywords || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="品牌关键词">
+                  {selectedTask.config.brandKeywords || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="竞品关键词">
+                  {selectedTask.config.competitorKeywords || '-'}
+                </Descriptions.Item>
+              </>
+            )}
+            {selectedTask.type === 'upload' && !selectedTask.config && (
               <Descriptions.Item label="说明">
-                <Text type="secondary">该任务通过Excel上传方式创建，无需配置搜索参数</Text>
+                <Text type="secondary">该任务通过Excel上传方式创建</Text>
               </Descriptions.Item>
             )}
           </Descriptions>
         )}
       </Drawer>
+
+      {/* Rename Modal */}
+      <Modal
+        title="重命名任务"
+        open={renameModalVisible}
+        onOk={handleRenameConfirm}
+        onCancel={() => setRenameModalVisible(false)}
+        okText="确认"
+        cancelText="取消"
+        okButtonProps={{ style: { backgroundColor: '#6C6C9C' } }}
+      >
+        <div className="mb-4">
+          <Text type="secondary">请输入新的任务名称</Text>
+        </div>
+        <Input
+          value={newTaskName}
+          onChange={(e) => setNewTaskName(e.target.value)}
+          placeholder="请输入任务名称"
+          onPressEnter={handleRenameConfirm}
+          autoFocus
+        />
+      </Modal>
     </div>
   );
 };

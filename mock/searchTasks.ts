@@ -26,6 +26,11 @@ export const mockSearchTasks = [
     status: 'completed',
     createdAt: '2024-01-16 14:20:00',
     creator: '李娜',
+    config: {
+      industryKeywords: 'lawn mower;robot mower;garden tools',
+      brandKeywords: 'Husqvarna;Honda',
+      competitorKeywords: 'Robomow;Worx',
+    }
   },
   {
     id: 'st3',
@@ -35,5 +40,14 @@ export const mockSearchTasks = [
     status: 'processing',
     createdAt: '2024-01-17 09:00:00',
     creator: '王芳',
+    config: {
+      industryKeywords: 'smart home;home automation;IoT devices',
+      brandKeywords: 'Google Home;Amazon Echo',
+      competitorKeywords: 'Apple HomeKit;Samsung SmartThings',
+      videosPerKeyword: 50,
+      sortBy: 'relevance',
+      searchDimension: 'video',
+      minSubscribers: 5000
+    }
   },
 ];

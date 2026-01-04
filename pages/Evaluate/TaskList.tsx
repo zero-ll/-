@@ -8,13 +8,16 @@ import {
   Badge,
   Typography,
   Tooltip,
-  Input
+  Input,
+  Modal,
+  message
 } from 'antd';
 import {
   EyeOutlined,
   ReloadOutlined,
   UsergroupAddOutlined,
-  SearchOutlined
+  SearchOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
@@ -28,6 +31,9 @@ const EvaluateTaskList: React.FC = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+  const [renamingTask, setRenamingTask] = useState<any>(null);
+  const [newTaskName, setNewTaskName] = useState('');
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -56,6 +62,38 @@ const EvaluateTaskList: React.FC = () => {
     );
   }, [tasks, searchText]);
 
+  const handleRename = (task: any) => {
+    setRenamingTask(task);
+    setNewTaskName(task.name);
+    setRenameModalVisible(true);
+  };
+
+  const handleRenameConfirm = async () => {
+    if (!newTaskName.trim()) {
+      message.error('任务名称不能为空');
+      return;
+    }
+
+    // 验证名称是否重复（排除当前任务）
+    const isDuplicate = tasks.some(
+      t => t.id !== renamingTask.id && t.name === newTaskName.trim()
+    );
+
+    if (isDuplicate) {
+      message.error('任务名称已存在，请使用其他名称');
+      return;
+    }
+
+    try {
+      await api.updateEvaluateTask(renamingTask.id, { name: newTaskName.trim() });
+      message.success('任务重命名成功');
+      setRenameModalVisible(false);
+      fetchTasks();
+    } catch (error) {
+      message.error('重命名失败');
+    }
+  };
+
   const columns = [
     {
       title: '任务名称',
@@ -69,8 +107,8 @@ const EvaluateTaskList: React.FC = () => {
       key: 'influencerCount',
       render: (count: number) => (
         <Space>
-           <UsergroupAddOutlined className="text-gray-400" />
-           <span>{count}</span>
+          <UsergroupAddOutlined className="text-gray-400" />
+          <span>{count}</span>
         </Space>
       ),
     },
@@ -83,7 +121,7 @@ const EvaluateTaskList: React.FC = () => {
         if (!channelTypes) return '-';
 
         // 收集所有标签并平铺显示
-        const allTags: Array<{label: string, color: string}> = [];
+        const allTags: Array<{ label: string, color: string }> = [];
 
         if (channelTypes.p0 && channelTypes.p0.length > 0) {
           channelTypes.p0.forEach((tag: string) => {
@@ -126,9 +164,9 @@ const EvaluateTaskList: React.FC = () => {
         };
 
         const labelMap: Record<string, string> = {
-            completed: '已完成',
-            processing: '分析中',
-            pending: '待处理',
+          completed: '已完成',
+          processing: '分析中',
+          pending: '待处理',
         };
 
         return <Badge status={statusMap[status] || 'default'} text={labelMap[status] || status} />;
@@ -160,6 +198,14 @@ const EvaluateTaskList: React.FC = () => {
           >
             查看报告
           </Button>
+          <Button
+            type="link"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => handleRename(record)}
+          >
+            重命名
+          </Button>
         </Space>
       ),
     },
@@ -173,9 +219,9 @@ const EvaluateTaskList: React.FC = () => {
           <Text type="secondary">深度分析您选择的红人</Text>
         </div>
         <Space>
-           <Tooltip title="刷新列表">
-              <Button icon={<ReloadOutlined />} onClick={fetchTasks} />
-           </Tooltip>
+          <Tooltip title="刷新列表">
+            <Button icon={<ReloadOutlined />} onClick={fetchTasks} />
+          </Tooltip>
         </Space>
       </div>
 
@@ -204,19 +250,41 @@ const EvaluateTaskList: React.FC = () => {
             header: {
               cell: (props: any) => (
                 <th
-                    {...props}
-                    style={{
-                        ...props.style,
-                        background: '#fafafa',
-                        fontWeight: 600,
-                        color: '#666'
-                    }}
+                  {...props}
+                  style={{
+                    ...props.style,
+                    background: '#fafafa',
+                    fontWeight: 600,
+                    color: '#666'
+                  }}
                 />
               )
             }
           }}
         />
       </Card>
+
+      {/* Rename Modal */}
+      <Modal
+        title="重命名任务"
+        open={renameModalVisible}
+        onOk={handleRenameConfirm}
+        onCancel={() => setRenameModalVisible(false)}
+        okText="确认"
+        cancelText="取消"
+        okButtonProps={{ style: { backgroundColor: '#6C6C9C' } }}
+      >
+        <div className="mb-4">
+          <Text type="secondary">请输入新的任务名称</Text>
+        </div>
+        <Input
+          value={newTaskName}
+          onChange={(e) => setNewTaskName(e.target.value)}
+          placeholder="请输入任务名称"
+          onPressEnter={handleRenameConfirm}
+          autoFocus
+        />
+      </Modal>
     </div>
   );
 };

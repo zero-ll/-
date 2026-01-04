@@ -35,12 +35,13 @@ const TaskDetail: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const currentProject = useProjectStore((state) => state.currentProject);
-  
+
   const [task, setTask] = useState<any>(null);
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [configModalVisible, setConfigModalVisible] = useState(false);
+  const [defaultTaskName, setDefaultTaskName] = useState('');
 
   // Filter States
   const [selectedTiers, setSelectedTiers] = useState<string[]>([]);
@@ -139,12 +140,25 @@ const TaskDetail: React.FC = () => {
     return colorMap[tier] || 'default';
   };
 
-  const handleStartEvaluate = () => {
-    // 先显示配置弹窗
-    setConfigModalVisible(true);
+  const handleStartEvaluate = async () => {
+    // 计算创建次数
+    try {
+      const existingTasks = await api.getEvaluateTasksBySourceId(id!);
+      const createCount = existingTasks.length + 1;
+      const defaultName = `评估${createCount}-${task?.name || ''}`;
+      setDefaultTaskName(defaultName);
+
+      // 显示配置弹窗
+      setConfigModalVisible(true);
+    } catch (error) {
+      console.error('Failed to calculate task count:', error);
+      // 如果计算失败，使用默认值
+      setDefaultTaskName(`评估-${task?.name || ''}`);
+      setConfigModalVisible(true);
+    }
   };
 
-  const handleConfigConfirm = async (config: any) => {
+  const handleConfigConfirm = async (data: { taskName: string; channelTypes: any }) => {
     // 确认配置后创建评估任务
     Modal.confirm({
       title: '开始评估',
@@ -156,10 +170,10 @@ const TaskDetail: React.FC = () => {
         try {
           await api.createEvaluateTask({
             projectId: currentProject?.id,
-            name: `${task?.name} - 评估`,
+            name: data.taskName,
             influencerCount: selectedRowKeys.length,
             sourceTaskId: id,
-            channelTypes: config // 传递频道类型配置
+            channelTypes: data.channelTypes
           });
           message.success('评估任务创建成功');
           navigate('/evaluate/tasks');
@@ -390,7 +404,7 @@ const TaskDetail: React.FC = () => {
           <Text type="secondary">任务：{task?.name || '加载中...'}</Text>
         </div>
         <div className="ml-auto">
-             <Button icon={<ExportOutlined />} onClick={handleExportCSV}>导出结果</Button>
+          <Button icon={<ExportOutlined />} onClick={handleExportCSV}>导出结果</Button>
         </div>
       </div>
 
@@ -398,48 +412,48 @@ const TaskDetail: React.FC = () => {
       <Card bordered={false} className="shadow-sm mb-6" bodyStyle={{ padding: '20px 24px' }}>
         <Row gutter={[24, 16]} align="middle">
           <Col xs={24} lg={14}>
-             <div className="flex flex-col gap-2">
-                <span className="text-xs font-semibold text-gray-500 uppercase">粉丝量级</span>
-                <Select
-                  mode="multiple"
-                  allowClear
-                  placeholder="选择粉丝量级"
-                  style={{ width: '100%' }}
-                  value={selectedTiers}
-                  onChange={setSelectedTiers}
-                  maxTagCount="responsive"
-                >
-                  <Option value="Mega">Mega (5M-10M)</Option>
-                  <Option value="Top">Top (1M-5M)</Option>
-                  <Option value="Macro">Macro (500K-1M)</Option>
-                  <Option value="Mid+">Mid+ (200K-500K)</Option>
-                  <Option value="Mid">Mid (100K-200K)</Option>
-                  <Option value="Micro+">Micro+ (50K-100K)</Option>
-                  <Option value="Micro">Micro (10K-50K)</Option>
-                  <Option value="Nano">Nano (0-10K)</Option>
-                </Select>
-             </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase">粉丝量级</span>
+              <Select
+                mode="multiple"
+                allowClear
+                placeholder="选择粉丝量级"
+                style={{ width: '100%' }}
+                value={selectedTiers}
+                onChange={setSelectedTiers}
+                maxTagCount="responsive"
+              >
+                <Option value="Mega">Mega (5M-10M)</Option>
+                <Option value="Top">Top (1M-5M)</Option>
+                <Option value="Macro">Macro (500K-1M)</Option>
+                <Option value="Mid+">Mid+ (200K-500K)</Option>
+                <Option value="Mid">Mid (100K-200K)</Option>
+                <Option value="Micro+">Micro+ (50K-100K)</Option>
+                <Option value="Micro">Micro (10K-50K)</Option>
+                <Option value="Nano">Nano (0-10K)</Option>
+              </Select>
+            </div>
           </Col>
           <Col xs={0} lg={1}>
-             <Divider type="vertical" className="h-12" />
+            <Divider type="vertical" className="h-12" />
           </Col>
           <Col xs={24} lg={9}>
-             <div className="flex flex-col gap-2">
-                <span className="text-xs font-semibold text-gray-500 uppercase">国家</span>
-                <Select
-                  mode="multiple"
-                  allowClear
-                  placeholder="选择国家"
-                  style={{ width: '100%' }}
-                  value={selectedCountries}
-                  onChange={setSelectedCountries}
-                  maxTagCount="responsive"
-                >
-                  {countries.map(c => (
-                    <Option key={c} value={c}>{getCountryName(c)}</Option>
-                  ))}
-                </Select>
-             </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase">国家</span>
+              <Select
+                mode="multiple"
+                allowClear
+                placeholder="选择国家"
+                style={{ width: '100%' }}
+                value={selectedCountries}
+                onChange={setSelectedCountries}
+                maxTagCount="responsive"
+              >
+                {countries.map(c => (
+                  <Option key={c} value={c}>{getCountryName(c)}</Option>
+                ))}
+              </Select>
+            </div>
           </Col>
         </Row>
       </Card>
@@ -467,15 +481,15 @@ const TaskDetail: React.FC = () => {
       </Card>
 
       {/* Sticky Action Bar */}
-      <div 
+      <div
         className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-white rounded-full shadow-lg border border-gray-100 px-6 py-3 flex items-center gap-6 transition-all duration-300 z-50 ${selectedRowKeys.length > 0 ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}
         style={{ maxWidth: '90%' }}
       >
         <div className="flex items-center gap-2">
-           <CheckCircleOutlined className="text-[#6C6C9C] text-xl" />
-           <span className="font-medium text-gray-700">
-             已选择 <span className="text-[#6C6C9C] font-bold">{selectedRowKeys.length}</span> 位红人
-           </span>
+          <CheckCircleOutlined className="text-[#6C6C9C] text-xl" />
+          <span className="font-medium text-gray-700">
+            已选择 <span className="text-[#6C6C9C] font-bold">{selectedRowKeys.length}</span> 位红人
+          </span>
         </div>
         <div className="h-6 w-px bg-gray-200"></div>
         <Button
@@ -493,6 +507,7 @@ const TaskDetail: React.FC = () => {
         visible={configModalVisible}
         onCancel={() => setConfigModalVisible(false)}
         onConfirm={handleConfigConfirm}
+        defaultTaskName={defaultTaskName}
       />
     </div>
   );

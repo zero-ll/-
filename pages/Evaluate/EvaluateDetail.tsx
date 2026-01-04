@@ -335,19 +335,6 @@ const EvaluateDetail: React.FC = () => {
       width: 200,
       render: (text: string) => text ? <Tag color="geekblue">{text}</Tag> : <span className="text-gray-400">-</span>,
     },
-    is_candidate: {
-      title: '候选状态',
-      dataIndex: 'influencer_id',
-      key: 'is_candidate',
-      width: 110,
-      render: (influencerId: string) => {
-        return isCandidate(influencerId) ? (
-          <Tag color="success" icon={<CheckCircleOutlined />}>已添加</Tag>
-        ) : (
-          <Tag color="default">未添加</Tag>
-        );
-      },
-    },
     quality_score: {
       title: '质量评估',
       dataIndex: 'quality_score',
@@ -695,6 +682,23 @@ const EvaluateDetail: React.FC = () => {
             selectedRowKeys,
             onChange: (keys) => setSelectedRowKeys(keys),
             preserveSelectedRowKeys: true,
+            getCheckboxProps: (record: any) => {
+              const isAlreadyCandidate = isCandidate(record.influencer_id);
+              return {
+                disabled: isAlreadyCandidate,
+              };
+            },
+            renderCell: (checked: boolean, record: any, index: number, originNode: React.ReactNode) => {
+              const isAlreadyCandidate = isCandidate(record.influencer_id);
+              if (isAlreadyCandidate) {
+                return (
+                  <Tooltip title="此红人已添加至红人候选列表">
+                    {originNode}
+                  </Tooltip>
+                );
+              }
+              return originNode;
+            },
           }}
           columns={columns}
           dataSource={filteredData}
@@ -710,16 +714,16 @@ const EvaluateDetail: React.FC = () => {
         />
       </Card>
 
-       {/* Sticky Action Bar */}
-       <div 
+      {/* Sticky Action Bar */}
+      <div
         className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-white rounded-full shadow-lg border border-gray-100 px-6 py-3 flex items-center gap-6 transition-all duration-300 z-50 ${selectedRowKeys.length > 0 ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}
         style={{ maxWidth: '90%' }}
       >
         <div className="flex items-center gap-2">
-           <CheckCircleOutlined className="text-[#6C6C9C] text-xl" />
-           <span className="font-medium text-gray-700">
-             已选择 <span className="text-[#6C6C9C] font-bold">{selectedRowKeys.length}</span> 位候选人
-           </span>
+          <CheckCircleOutlined className="text-[#6C6C9C] text-xl" />
+          <span className="font-medium text-gray-700">
+            已选择 <span className="text-[#6C6C9C] font-bold">{selectedRowKeys.length}</span> 位候选人
+          </span>
         </div>
         <div className="h-6 w-px bg-gray-200"></div>
         <Button
